@@ -1,0 +1,92 @@
+{
+  "generated_at": "2026-04-09T12:30:31.976254+00:00",
+  "total_sessions": 500,
+  "total_valid": 397,
+  "total_suspicious": 82,
+  "total_bots": 21,
+  "blocked_ip_count": 16,
+  "saved_spend": 8205.0,
+  "fake_form_fills": 21,
+  "recent_threats": [
+    {
+      "timestamp": "2025-11-20T22:39:43.252Z",
+      "ip_address": "45.142.212.7",
+      "country": "China",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    },
+    {
+      "timestamp": "2025-11-20T17:54:59.504Z",
+      "ip_address": "45.142.212.7",
+      "country": "China",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    },
+    {
+      "timestamp": "2025-11-20T16:51:55.026Z",
+      "ip_address": "169.90.199.32",
+      "country": "Russia",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    },
+    {
+      "timestamp": "2025-11-20T15:59:16.849Z",
+      "ip_address": "52.61.196.171",
+      "country": "Russia",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    },
+    {
+      "timestamp": "2025-11-20T04:17:35.909Z",
+      "ip_address": "45.142.212.0",
+      "country": "China",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    },
+    {
+      "timestamp": "2025-11-20T00:25:34.664Z",
+      "ip_address": "184.252.235.8",
+      "country": "Russia",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    },
+    {
+      "timestamp": "2025-11-19T21:29:16.361Z",
+      "ip_address": "45.142.212.8",
+      "country": "Russia",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    },
+    {
+      "timestamp": "2025-11-19T06:36:54.905Z",
+      "ip_address": "45.142.212.8",
+      "country": "Russia",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    },
+    {
+      "timestamp": "2025-11-19T03:50:47.054Z",
+      "ip_address": "3.233.169.94",
+      "country": "Russia",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    },
+    {
+      "timestamp": "2025-11-19T00:37:58.100Z",
+      "ip_address": "23.174.55.126",
+      "country": "Russia",
+      "user_agent": "python-requests/2.31.0",
+      "risk_score": 90,
+      "verdict": "Bot"
+    }
+  ]
+}
