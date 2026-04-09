@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CHEQ — Threat Mitigation Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --black:   #0a0a0a;
+      --white:   #f5f5f0;
+      --red:     #ff0055;
+      --dim:     #1a1a1a;
+      --muted:   #888;
+      --border:  #222;
+      --valid:   #00e5a0;
+      --sus:     #ffbb00;
+      --bot:     #ff0055;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 32px 48px 40px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--black);
+      z-index: 10;
+    }
+
+    .logo {
+      font-family: 'Inter', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .logo span { color: var(--red); }
+
+    .header-meta {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.8;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--valid);
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* ── LAYOUT ── */
+    main {
+      padding: 48px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      color: var(--red);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    /* ── KPI GRID ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+      margin-bottom: 48px;
+      border: 1px solid var(--border);
+    }
+
+    .kpi-card {
+      background: var(--dim);
+      padding: 32px 28px;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .kpi-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent, var(--red));
+    }
+
+    .kpi-card:hover {
+      background: #1f1f1f;
+    }
+
+    .kpi-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .kpi-value {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -2px;
+      color: var(--white);
+    }
+
+    .kpi-value.money { color: var(--valid); }
+    .kpi-value.danger { color: var(--red); }
+
+    .kpi-sub {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    /* ── BOTTOM GRID ── */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.8fr;
+      gap: 24px;
+    }
+
+    .panel {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      padding: 32px;
+    }
+
+    .panel-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── CHART ── */
+    .chart-wrap {
+      position: relative;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.7rem;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .legend-label { color: var(--muted); flex: 1; }
+    .legend-count { color: var(--white); font-weight: 700; }
+
+    /* ── THREATS TABLE ── */
+    .threat-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+    }
+
+    .threat-table th {
+      text-align: left;
+      padding: 0 12px 14px 0;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      font-weight: 400;
+    }
+
+    .threat-table td {
+      padding: 13px 12px 13px 0;
+      border-bottom: 1px solid #161616;
+      vertical-align: middle;
+      color: #aaa;
+    }
+
+    .threat-table tr:hover td { color: var(--white); background: #141414; }
+
+    .threat-table td:first-child { color: var(--white); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      border-radius: 2px;
+    }
+
+    .badge-bot        { background: rgba(255,0,85,0.15); color: var(--red); }
+    .badge-suspicious { background: rgba(255,187,0,0.15); color: var(--sus); }
+
+    .score-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .score-track {
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      background: var(--red);
+      border-radius: 2px;
+    }
+
+    /* ── LOADING ── */
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 100;
+      transition: opacity 0.4s ease;
+    }
+
+    #loading.hidden { opacity: 0; pointer-events: none; }
+
+    .loader-logo {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .loader-logo span { color: var(--red); }
+
+    .loader-bar {
+      width: 120px;
+      height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .loader-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--red);
+      border-radius: 2px;
+      animation: load 1s ease forwards;
+    }
+
+    @keyframes load {
+      to { width: 100%; }
+    }
+
+    .loader-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── ERROR ── */
+    #error-msg {
+      display: none;
+      background: rgba(255,0,85,0.08);
+      border: 1px solid rgba(255,0,85,0.3);
+      color: var(--red);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      padding: 20px 28px;
+      margin-bottom: 32px;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .bottom-grid { grid-template-columns: 1fr; }
+      header, main { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div id="loading">
+  <div class="loader-logo">CHEQ<span>.</span></div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <div class="loader-text">Analyzing threat data...</div>
+</div>
+
+<header>
+  <div class="logo">CHEQ Technical Assignment<span>.</span></div>
+  <div class="header-meta">
+    <div><span class="status-dot"></span>PIPELINE ACTIVE</div>
+    <div id="generated-at">—</div>
+  </div>
+</header>
+
+<main>
+  <div id="error-msg"></div>
+
+  <!-- KPIs -->
+  <div class="section-label">/ Overview</div>
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--accent: #555" id="card-0">
+      <div class="kpi-label">Total Traffic Analyzed</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-sub">sessions processed</div>
+    </div>
+    <div class="kpi-card" style="--accent: var(--valid)" id="card-1">
+      <div class="kpi-label">Total Money Saved</div>
+      <div class="kpi-value money" id="kpi-spend">—</div>
+      <div class="kpi-sub">at $5.00 CPC</div>
+    </div>
+    <div class="kpi-card" style="--accent: var(--red)" id="card-2">
+      <div class="kpi-label">Blocked IPs</div>
+      <div class="kpi-value danger" id="kpi-blocked">—</div>
+      <div class="kpi-sub">added to firewall</div>
+    </div>
+    <div class="kpi-card" style="--accent: var(--sus)" id="card-3">
+      <div class="kpi-label">Fake Form Fills Blocked</div>
+      <div class="kpi-value" id="kpi-forms">—</div>
+      <div class="kpi-sub">conversion protection</div>
+    </div>
+  </div>
+
+  <!-- Bottom panels -->
+  <div class="bottom-grid">
+
+    <!-- Chart -->
+    <div class="panel">
+      <div class="panel-title">Traffic Breakdown</div>
+      <div class="chart-wrap">
+        <canvas id="trafficChart"></canvas>
+      </div>
+      <div class="chart-legend" id="chart-legend"></div>
+    </div>
+
+    <!-- Threats table -->
+    <div class="panel">
+      <div class="panel-title">Recent Mitigated Threats</div>
+      <table class="threat-table">
+        <thead>
+          <tr>
+            <th>IP Address</th>
+            <th>Country</th>
+            <th>Verdict</th>
+            <th>Risk Score</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody id="threats-body">
+          <tr><td colspan="5" style="color:var(--muted);padding-top:20px">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  function fmt(n) {
+    return Number(n).toLocaleString();
+  }
+
+  function fmtMoney(n) {
+    return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function fmtDate(iso) {
+    try {
+      return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch { return iso; }
+  }
+
+  function truncate(str, n) {
+    if (!str) return '—';
+    return str.length > n ? str.slice(0, n) + '…' : str;
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  function render(data) {
+    // KPIs
+    document.getElementById('kpi-total').textContent   = fmt(data.total_sessions);
+    document.getElementById('kpi-spend').textContent   = fmtMoney(data.saved_spend);
+    document.getElementById('kpi-blocked').textContent = fmt(data.blocked_ip_count);
+    document.getElementById('kpi-forms').textContent   = fmt(data.fake_form_fills);
+    document.getElementById('generated-at').textContent = fmtDate(data.generated_at);
+
+    // Stagger KPI card reveals
+    [0,1,2,3].forEach(i => {
+      setTimeout(() => document.getElementById('card-' + i).classList.add('visible'), i * 100);
+    });
+
+    // Chart
+    const labels  = ['Valid', 'Suspicious', 'Bot'];
+    const values  = [data.total_valid, data.total_suspicious, data.total_bots];
+    const colors  = ['#00e5a0', '#ffbb00', '#ff0055'];
+    const bgs     = ['rgba(0,229,160,0.15)', 'rgba(255,187,0,0.15)', 'rgba(255,0,85,0.15)'];
+
+    const ctx = document.getElementById('trafficChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: bgs,
+          borderColor: colors,
+          borderWidth: 2,
+          hoverBackgroundColor: colors,
+        }]
+      },
+      options: {
+        cutout: '72%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.label}: ${fmt(ctx.raw)} sessions`
+            }
+          }
+        }
+      }
+    });
+
+    // Legend
+    const legend = document.getElementById('chart-legend');
+    labels.forEach((label, i) => {
+      const pct = ((values[i] / data.total_sessions) * 100).toFixed(1);
+      legend.innerHTML += `
+        <div class="legend-item">
+          <div class="legend-dot" style="background:${colors[i]}"></div>
+          <span class="legend-label">${label}</span>
+          <span class="legend-count">${fmt(values[i])} <span style="color:var(--muted)">(${pct}%)</span></span>
+        </div>`;
+    });
+
+    // Threats table
+    const tbody = document.getElementById('threats-body');
+    tbody.innerHTML = '';
+
+    if (!data.recent_threats || data.recent_threats.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">No threats found.</td></tr>';
+      return;
+    }
+
+    data.recent_threats.forEach(t => {
+      const badge = t.verdict === 'Bot'
+        ? `<span class="badge badge-bot">BOT</span>`
+        : `<span class="badge badge-suspicious">SUSPICIOUS</span>`;
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${t.ip_address || '—'}</td>
+          <td>${t.country || '—'}</td>
+          <td>${badge}</td>
+          <td>
+            <div class="score-bar">
+              <div class="score-track">
+                <div class="score-fill" style="width:${t.risk_score}%"></div>
+              </div>
+              ${t.risk_score}
+            </div>
+          </td>
+          <td>${fmtDate(t.timestamp)}</td>
+        </tr>`;
+    });
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+
+  async function init() {
+    try {
+      const res = await fetch('summary.json');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      render(data);
+    } catch (err) {
+      const el = document.getElementById('error-msg');
+      el.style.display = 'block';
+      el.innerHTML = `
+        ⚠ Could not load summary.json<br>
+        Make sure you're running a local server: <strong>python3 -m http.server 8000</strong><br>
+        Then open <strong>http://localhost:8000</strong> in your browser.<br><br>
+        Error: ${err.message}`;
+    } finally {
+      setTimeout(() => document.getElementById('loading').classList.add('hidden'), 1000);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
