@@ -57,6 +57,11 @@ Then open `http://localhost:8000` in your browser.
 To stop the server:
 
 ```bash
+ctrl + c
+```
+or 
+
+```bash
 lsof -ti:8000 | xargs kill
 ```
 
